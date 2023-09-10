@@ -30,7 +30,7 @@ use std::f32::consts::PI;
 use std::hash::Hash;
 use std::ops::Sub;
 
-use egui::{Color32, Context, Id, PointerButton, Rect, Sense, Ui};
+use egui::{Color32, Context, Id, PointerButton, Rect, Sense, Ui, vec2};
 use glam::{Mat4, Quat, Vec3, Vec4, Vec4Swizzles};
 
 use crate::subgizmo::{SubGizmo, SubGizmoKind};
@@ -156,20 +156,15 @@ impl Gizmo {
         let mut state = GizmoState::load(ui.ctx(), self.id);
 
         if let Some(pointer_ray) = self.pointer_ray(ui) {
-            let viewport = self.config.viewport;
-            let id = self.id;
-
             // If there is no active subgizmo, find which one of them
             // is under the mouse pointer, if any.
             if state.active_subgizmo_id.is_none() {
                 if let Some(subgizmo) = self.pick_subgizmo(ui, pointer_ray) {
+                    let hover = ui.input(|i| i.pointer.hover_pos())?;
+                    let rect = Rect::from_min_size(hover, vec2(1., 1.));
+                    ui.allocate_rect(rect, Sense::click_and_drag());
                     subgizmo.focused = true;
-
-                    let interaction = ui.interact(viewport, id, Sense::click_and_drag());
-                    let dragging = interaction.dragged_by(PointerButton::Primary);
-                    if interaction.drag_started() && dragging {
-                        state.active_subgizmo_id = Some(subgizmo.id);
-                    }
+                    state.active_subgizmo_id = Some(subgizmo.id);
                 }
             }
 
